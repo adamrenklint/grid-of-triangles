@@ -1,0 +1,27 @@
+body {
+  margin: 30px 40px;
+  font-size: 140%;
+  line-height: 1.3;
+}
+h1 small {
+  font-size: 60%;
+}
+#experiment {
+  position: relative;
+}
+#experiment canvas {
+  position: absolute;
+  width: 500px;
+}
+#experiment #grid {
+  height: 500px;
+  top: 0;
+}
+#experiment #fitness-graph {
+  height: 200px;
+  top: 520px;
+}
+#experiment #container {
+  margin-left: 540px;
+  max-width: 500px;
+}
