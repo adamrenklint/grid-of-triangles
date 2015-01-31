@@ -77,6 +77,8 @@ function draw (map, element, clock, world) {
     }
     context.fillText(generationText, 10, 50);
 
+    context.fillText('pop ' + world.triangles().length, 10, 75);
+
     var foodText = 'food avg ' + stats.averageFoodEaten.toFixed(2) + ' max ' + stats.maxFoodEaten;
     context.fillText(foodText, 10, height - 40);
 

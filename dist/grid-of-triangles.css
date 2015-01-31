@@ -17,8 +17,8 @@ h1 small {
   height: 500px;
   top: 0;
 }
-#experiment #fitness-graph {
-  height: 200px;
+#experiment #graphs {
+  height: 100px;
   top: 520px;
 }
 #experiment #container {

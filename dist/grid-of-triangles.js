@@ -20176,6 +20176,8 @@ function draw (map, element, clock, world) {
     }
     context.fillText(generationText, 10, 50);
 
+    context.fillText('pop ' + world.triangles().length, 10, 75);
+
     var foodText = 'food avg ' + stats.averageFoodEaten.toFixed(2) + ' max ' + stats.maxFoodEaten;
     context.fillText(foodText, 10, height - 40);
 
@@ -20197,21 +20199,23 @@ var grid = require('./grid');
 var draw = require('./draw');
 var clock = require('./clock');
 var world = require('./world');
+var graphs = require('./graphs');
 
 $(function () {
 
   var $grid = $('#grid');
-  var $fitnessGraph = $('#fitness-graph');
+  var $graphs = $('#graphs');
 
   var _grid = grid(50, 50);
-  var _clock = clock(25);
+  var _clock = clock(1);
   var _world = world(_grid, _clock, 50);
   window.grid = _grid;
   
   _clock.start();
   draw(_grid, $grid, _clock, _world);
+  graphs(world, $graphs)
 });
-},{"./clock":3,"./draw":6,"./grid":9,"./world":12,"jquery":1}],8:[function(require,module,exports){
+},{"./clock":3,"./draw":6,"./graphs":9,"./grid":10,"./world":13,"jquery":1}],8:[function(require,module,exports){
 function food () {
 
   var self = {
@@ -20227,6 +20231,26 @@ function food () {
 
 module.exports = food;
 },{}],9:[function(require,module,exports){
+function graphs (world, element) {
+
+  var width = element[0].width = element.width();
+  var height = element[0].height = element.height();
+  var context = element[0].getContext('2d');
+
+  var do_continue = true;
+
+  function draw () {
+
+    if (do_continue) window.requestAnimationFrame(draw);
+  }
+
+  draw();
+
+  return function stop () { do_continue = false; };
+}
+
+module.exports = graphs;
+},{}],10:[function(require,module,exports){
 function grid (width, height) {
   
   var cols = [];
@@ -20253,7 +20277,7 @@ function grid (width, height) {
   }
 
   function unset (x, y) {
-   cols[x][y] = null; 
+   cols[x][y] = 0; 
   }
 
   function setRandom (target) {
@@ -20277,12 +20301,13 @@ function grid (width, height) {
 }
 
 module.exports = grid;
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var _ = require('lodash');
 var triangle = require('./triangle');
 
 function fitness (individual) {
-  return individual.foodsEaten;
+  // return individual.foodsEaten;
+  return individual.foodsEaten * (individual.moves || 1);
 }
 
 function select (pool) {
@@ -20295,33 +20320,11 @@ function select (pool) {
   var all = [];
   var sorted = _.sortBy(pool, 'fitness').reverse();
   var topTier = sorted.slice(0, Math.floor(sorted.length / 10));
-  var midTier = sorted.slice(0, Math.floor(sorted.length / 2));
-  // console.log(_.pluck(sorted, 'fitness'));
-  // console.log(_.pluck(topTier, 'fitness'));
-  // console.log(_.pluck(midTier, 'fitness'));
-  var all = [];
-  _.times(5, function () {
-    all = all.concat(topTier)
-  });
-  _.times(1, function () {
-    all = all.concat(midTier)
-  });
-  all = _.shuffle(all);
-  // console.log(all);
-  // var qualified = _.filter(pool, function (individual) {
-  //   return individual.fitness >= average;
-  // });
-  // var all = pool.slice();
-  // var ratio = 10;
-  // for (var i = 0; i < ratio; i++) {
-  //   all = all.concat(qualified);
-  // }
-  
-  var first = _.random(all.length - 1);
-  var second = _.random(all.length - 1);
+  var first = _.random(topTier.length - 1);
+  var second = _.random(topTier.length - 1);
 
-  first = all[first];
-  second = all[second];
+  first = topTier[first];
+  second = topTier[second];
 
   if (first.id === second.id) return select(pool);
   return [first, second];
@@ -20362,8 +20365,14 @@ function crossover (parents, grid) {
   return [first, second];
 }
 
-function mutate () {
-
+function mutate (individual) {
+  var outputs = ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT'];
+  _.forEach(individual.dna(), function (output, input) {
+    if (_.random(100) < 4) {
+      var newOutput =  _.random(outputs.length - 1);
+      individual.dna(input, newOutput);
+    }
+  });
 }
 
 
@@ -20374,13 +20383,11 @@ function spawn (pool, population, grid) {
     mutate(individual);
     population.push(individual);
     grid.setRandom(individual);
-    // console.log('added', individual);
   });
-  // debugger;
 }
 
 module.exports = spawn;
-},{"./triangle":11,"lodash":2}],11:[function(require,module,exports){
+},{"./triangle":12,"lodash":2}],12:[function(require,module,exports){
 var _ = require('lodash');
 var dna = require('./dna');
 var _id = 0;
@@ -20405,7 +20412,8 @@ function triangle (grid) {
     'y': 0,
     'health': 100,
     'foodsEaten': 0,
-    'daysAlive': 0
+    'daysAlive': 0,
+    'moves': 0
   };
 
   function relative (direction) {
@@ -20502,32 +20510,38 @@ function triangle (grid) {
     if (next_y < 0) next_y = 0;
     if (next_y >= grid.height) next_y = 49;
 
-    var current = grid.get(next_x, next_y);
-    if (current && current.type === 'TRIANGLE' && !current.moved && !current.moving) {
-      // console.log('current', current)
-    
-      current.moving = true;
-      current.move();
-    }
-    current = grid.get(next_x, next_y);
-    if (!current || current.id === self.id) {
-      grid.unset(self.x, self.y);
-      grid.set(next_x, next_y, self);
-    }
-    else if (current.type === 'FOOD') {
-      current.eat(self);
-      //TODO: if moving backwards, not possible to eat!
-    }
-    else if (current.type === 'DANGER') {
-      current.kill(self);
-    }
-    else if (window.debug === self.id) {
-      // console.warn('move not possible', self.id, current.id, current.type);
-      debugger;
-    }
-    // if another triangle is in the spot, did they move: if not, make them
-    // is next_x or next_y a legal move? if not, stay
+    if (next_x !== self.x || next_y !== self.y) {
 
+      var current = grid.get(next_x, next_y);
+      if (current && current.type === 'TRIANGLE' && !current.moved && !current.moving) {
+        // console.log('current', current)
+      
+        current.moving = true;
+        current.move();
+      }
+      current = grid.get(next_x, next_y);
+      if (!current || current.id === self.id) {
+        grid.unset(self.x, self.y);
+        grid.set(next_x, next_y, self);
+        self.moves++;
+      }
+      else if (current.type === 'FOOD') {
+        self.moves++;
+        current.eat(self);
+        //TODO: if moving backwards, not possible to eat!
+      }
+      else if (current.type === 'DANGER') {
+        self.moves++;
+        current.kill(self);
+      }
+      else if (window.debug === self.id) {
+        // console.warn('move not possible', self.id, current.id, current.type);
+        debugger;
+      }
+      // if another triangle is in the spot, did they move: if not, make them
+      // is next_x or next_y a legal move? if not, stay
+    }
+    
     self.moving = false;
     self.moved = true;
   }
@@ -20536,7 +20550,7 @@ function triangle (grid) {
 }
 
 module.exports = triangle;
-},{"./dna":5,"lodash":2}],12:[function(require,module,exports){
+},{"./dna":5,"lodash":2}],13:[function(require,module,exports){
 var _ = require('lodash');
 var triangle = require('./triangle');
 var food = require('./food');
@@ -20548,8 +20562,8 @@ function world (grid, clock, populationSize) {
   var population = [];
   var foods = [];
   var dangers = [];
-  var maxFood = Math.floor(populationSize);
-  var maxDangers = Math.floor(populationSize / 3);
+  var maxFood = populationSize * 2;
+  var maxDangers = populationSize / 2;
   var minGeneration, maxGeneration, averageFoodEaten, maxFoodEaten, averageDaysAlive, maxDaysAlive;
 
   while (population.length < populationSize) {
@@ -20570,7 +20584,10 @@ function world (grid, clock, populationSize) {
       grid.unset(triangle.x, triangle.y);
       triangle.dead = true;
       // console.log('kill');
-      if (population.length < populationSize) spawn(pool, population, grid);
+      // console.log(triangle.foodsEaten > averageFoodEaten, triangle.foodsEaten,  averageFoodEaten)
+      if (triangle.foodsEaten > averageFoodEaten || population.length < populationSize) {
+        spawn(pool, population, grid);
+      }
     }
   }
 
@@ -20592,6 +20609,7 @@ function world (grid, clock, populationSize) {
   }
 
   clock.listen(function (now) {
+    maxFood = population.length * 3;
     updateFood();
     minGeneration = maxGeneration = 0;
     population.forEach(function (triangle) {
@@ -20636,6 +20654,10 @@ function world (grid, clock, populationSize) {
     return [].concat(population, foods, dangers);
   }
 
+  function triangles () {
+    return population;
+  }
+
   function stats () {
     return {
       'minGeneration': minGeneration,
@@ -20649,9 +20671,10 @@ function world (grid, clock, populationSize) {
 
   return {
     'all': all,
-    'stats': stats
+    'stats': stats,
+    'triangles': triangles
   };
 }
 
 module.exports = world;
-},{"./danger":4,"./food":8,"./spawn":10,"./triangle":11,"lodash":2}]},{},[7])
+},{"./danger":4,"./food":8,"./spawn":11,"./triangle":12,"lodash":2}]},{},[7])

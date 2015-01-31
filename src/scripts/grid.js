@@ -24,7 +24,7 @@ function grid (width, height) {
   }
 
   function unset (x, y) {
-   cols[x][y] = null; 
+   cols[x][y] = 0; 
   }
 
   function setRandom (target) {

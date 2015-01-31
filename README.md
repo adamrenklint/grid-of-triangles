@@ -7,4 +7,3 @@
 ## TODO
 
 - the triangle ```sense()``` function returns incorrect values for other triangles, the direction needs to be encoded relative to self
-- implement ```mutate()```

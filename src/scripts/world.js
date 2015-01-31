@@ -9,8 +9,8 @@ function world (grid, clock, populationSize) {
   var population = [];
   var foods = [];
   var dangers = [];
-  var maxFood = Math.floor(populationSize);
-  var maxDangers = Math.floor(populationSize / 3);
+  var maxFood = populationSize * 2;
+  var maxDangers = populationSize / 2;
   var minGeneration, maxGeneration, averageFoodEaten, maxFoodEaten, averageDaysAlive, maxDaysAlive;
 
   while (population.length < populationSize) {
@@ -31,7 +31,10 @@ function world (grid, clock, populationSize) {
       grid.unset(triangle.x, triangle.y);
       triangle.dead = true;
       // console.log('kill');
-      if (population.length < populationSize) spawn(pool, population, grid);
+      // console.log(triangle.foodsEaten > averageFoodEaten, triangle.foodsEaten,  averageFoodEaten)
+      if (triangle.foodsEaten > averageFoodEaten || population.length < populationSize) {
+        spawn(pool, population, grid);
+      }
     }
   }
 
@@ -53,6 +56,7 @@ function world (grid, clock, populationSize) {
   }
 
   clock.listen(function (now) {
+    maxFood = population.length * 3;
     updateFood();
     minGeneration = maxGeneration = 0;
     population.forEach(function (triangle) {
@@ -97,6 +101,10 @@ function world (grid, clock, populationSize) {
     return [].concat(population, foods, dangers);
   }
 
+  function triangles () {
+    return population;
+  }
+
   function stats () {
     return {
       'minGeneration': minGeneration,
@@ -110,7 +118,8 @@ function world (grid, clock, populationSize) {
 
   return {
     'all': all,
-    'stats': stats
+    'stats': stats,
+    'triangles': triangles
   };
 }
 

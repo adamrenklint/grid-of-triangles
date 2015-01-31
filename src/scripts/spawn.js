@@ -2,7 +2,8 @@ var _ = require('lodash');
 var triangle = require('./triangle');
 
 function fitness (individual) {
-  return individual.foodsEaten;
+  // return individual.foodsEaten;
+  return individual.foodsEaten * (individual.moves || 1);
 }
 
 function select (pool) {
@@ -15,33 +16,11 @@ function select (pool) {
   var all = [];
   var sorted = _.sortBy(pool, 'fitness').reverse();
   var topTier = sorted.slice(0, Math.floor(sorted.length / 10));
-  var midTier = sorted.slice(0, Math.floor(sorted.length / 2));
-  // console.log(_.pluck(sorted, 'fitness'));
-  // console.log(_.pluck(topTier, 'fitness'));
-  // console.log(_.pluck(midTier, 'fitness'));
-  var all = [];
-  _.times(5, function () {
-    all = all.concat(topTier)
-  });
-  _.times(1, function () {
-    all = all.concat(midTier)
-  });
-  all = _.shuffle(all);
-  // console.log(all);
-  // var qualified = _.filter(pool, function (individual) {
-  //   return individual.fitness >= average;
-  // });
-  // var all = pool.slice();
-  // var ratio = 10;
-  // for (var i = 0; i < ratio; i++) {
-  //   all = all.concat(qualified);
-  // }
-  
-  var first = _.random(all.length - 1);
-  var second = _.random(all.length - 1);
+  var first = _.random(topTier.length - 1);
+  var second = _.random(topTier.length - 1);
 
-  first = all[first];
-  second = all[second];
+  first = topTier[first];
+  second = topTier[second];
 
   if (first.id === second.id) return select(pool);
   return [first, second];
@@ -82,8 +61,14 @@ function crossover (parents, grid) {
   return [first, second];
 }
 
-function mutate () {
-
+function mutate (individual) {
+  var outputs = ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT'];
+  _.forEach(individual.dna(), function (output, input) {
+    if (_.random(100) < 4) {
+      var newOutput =  _.random(outputs.length - 1);
+      individual.dna(input, newOutput);
+    }
+  });
 }
 
 
@@ -94,9 +79,7 @@ function spawn (pool, population, grid) {
     mutate(individual);
     population.push(individual);
     grid.setRandom(individual);
-    // console.log('added', individual);
   });
-  // debugger;
 }
 
 module.exports = spawn;

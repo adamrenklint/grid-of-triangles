@@ -22,7 +22,8 @@ function triangle (grid) {
     'y': 0,
     'health': 100,
     'foodsEaten': 0,
-    'daysAlive': 0
+    'daysAlive': 0,
+    'moves': 0
   };
 
   function relative (direction) {
@@ -119,32 +120,38 @@ function triangle (grid) {
     if (next_y < 0) next_y = 0;
     if (next_y >= grid.height) next_y = 49;
 
-    var current = grid.get(next_x, next_y);
-    if (current && current.type === 'TRIANGLE' && !current.moved && !current.moving) {
-      // console.log('current', current)
-    
-      current.moving = true;
-      current.move();
-    }
-    current = grid.get(next_x, next_y);
-    if (!current || current.id === self.id) {
-      grid.unset(self.x, self.y);
-      grid.set(next_x, next_y, self);
-    }
-    else if (current.type === 'FOOD') {
-      current.eat(self);
-      //TODO: if moving backwards, not possible to eat!
-    }
-    else if (current.type === 'DANGER') {
-      current.kill(self);
-    }
-    else if (window.debug === self.id) {
-      // console.warn('move not possible', self.id, current.id, current.type);
-      debugger;
-    }
-    // if another triangle is in the spot, did they move: if not, make them
-    // is next_x or next_y a legal move? if not, stay
+    if (next_x !== self.x || next_y !== self.y) {
 
+      var current = grid.get(next_x, next_y);
+      if (current && current.type === 'TRIANGLE' && !current.moved && !current.moving) {
+        // console.log('current', current)
+      
+        current.moving = true;
+        current.move();
+      }
+      current = grid.get(next_x, next_y);
+      if (!current || current.id === self.id) {
+        grid.unset(self.x, self.y);
+        grid.set(next_x, next_y, self);
+        self.moves++;
+      }
+      else if (current.type === 'FOOD') {
+        self.moves++;
+        current.eat(self);
+        //TODO: if moving backwards, not possible to eat!
+      }
+      else if (current.type === 'DANGER') {
+        self.moves++;
+        current.kill(self);
+      }
+      else if (window.debug === self.id) {
+        // console.warn('move not possible', self.id, current.id, current.type);
+        debugger;
+      }
+      // if another triangle is in the spot, did they move: if not, make them
+      // is next_x or next_y a legal move? if not, stay
+    }
+    
     self.moving = false;
     self.moved = true;
   }
