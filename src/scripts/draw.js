@@ -1,7 +1,7 @@
 function draw (map, element, clock, world) {
 
-  element[0].width = element.width();
-  element[0].height = element.height();
+  var width = element[0].width = element.width();
+  var height = element[0].height = element.height();
   var context = element[0].getContext('2d');
   var do_continue = true;
   var cellSize = element.width() / map.width;
@@ -69,6 +69,19 @@ function draw (map, element, clock, world) {
     var timestamp = 'year ' + now.year + ' day ' + now.day;
     // var timestamp = 'generation 1, tick 123'
     context.fillText(timestamp, 10, 25);
+
+    var stats = world.stats();
+    var generationText = 'gen ' + stats.minGeneration;
+    if (stats.maxGeneration !== stats.minGeneration) {
+      generationText += '-' + stats.maxGeneration;
+    }
+    context.fillText(generationText, 10, 50);
+
+    var foodText = 'food avg ' + stats.averageFoodEaten.toFixed(2) + ' max ' + stats.maxFoodEaten;
+    context.fillText(foodText, 10, height - 40);
+
+    var lifecycleText = 'alive avg ' + stats.averageDaysAlive + ' max ' + stats.maxDaysAlive;
+    context.fillText(lifecycleText, 10, height - 15);
 
     if (do_continue) window.requestAnimationFrame(next);
   }

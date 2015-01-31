@@ -3,7 +3,7 @@ var _ = require('lodash');
 function dna () {
 
   var genes = {};
-  var outputs = ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT', 'BACK'];
+  var outputs = ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT'];
 
   function makeGene (input) {
     var options = outputs.slice();

@@ -11,6 +11,7 @@ function world (grid, clock, populationSize) {
   var dangers = [];
   var maxFood = Math.floor(populationSize);
   var maxDangers = Math.floor(populationSize / 3);
+  var minGeneration, maxGeneration, averageFoodEaten, maxFoodEaten, averageDaysAlive, maxDaysAlive;
 
   while (population.length < populationSize) {
     population.push(grid.setRandom(triangle(grid)));
@@ -27,6 +28,7 @@ function world (grid, clock, populationSize) {
     if (triangle.type === 'TRIANGLE') {
       var pool = population.slice();
       population = _.without(population, triangle);
+      grid.unset(triangle.x, triangle.y);
       triangle.dead = true;
       // console.log('kill');
       if (population.length < populationSize) spawn(pool, population, grid);
@@ -38,7 +40,7 @@ function world (grid, clock, populationSize) {
     to.foodsEaten++;
     foods = _.without(foods, from);
     grid.set(from.x, from.y, to);
-    console.log('eat', to.id, to.foodsEaten, to.health)
+    // console.log('eat', to.id, to.foodsEaten, to.health)
   }
 
   function updateFood () {
@@ -52,6 +54,7 @@ function world (grid, clock, populationSize) {
 
   clock.listen(function (now) {
     updateFood();
+    minGeneration = maxGeneration = 0;
     population.forEach(function (triangle) {
       if (!triangle.moved) {
         triangle.moving = true;
@@ -66,14 +69,48 @@ function world (grid, clock, populationSize) {
       }
       triangle.moved = false;
     });
+    maxFoodEaten = 0;
+    maxDaysAlive = 0;
+    var totalFoodsEaten = 0;
+    var totalDaysAlive = 0;
+    population.forEach(function (triangle) {
+      if (!minGeneration || triangle.generation < minGeneration) {
+        minGeneration = triangle.generation;
+      }
+      if (!maxGeneration || triangle.generation > maxGeneration) {
+        maxGeneration = triangle.generation;
+      }
+      if (triangle.foodsEaten > maxFoodEaten) {
+        maxFoodEaten = triangle.foodsEaten;
+      }
+      totalFoodsEaten += triangle.foodsEaten;
+      if (triangle.daysAlive > maxDaysAlive) {
+        maxDaysAlive = triangle.daysAlive;
+      }
+      totalDaysAlive += triangle.daysAlive;
+    });
+    averageFoodEaten = totalFoodsEaten / population.length;
+    averageDaysAlive = Math.round(totalDaysAlive / population.length);
   });
 
   function all () {
     return [].concat(population, foods, dangers);
   }
 
+  function stats () {
+    return {
+      'minGeneration': minGeneration,
+      'maxGeneration': maxGeneration,
+      'maxFoodEaten': maxFoodEaten,
+      'averageFoodEaten': averageFoodEaten,
+      'maxDaysAlive': maxDaysAlive,
+      'averageDaysAlive': averageDaysAlive
+    }
+  }
+
   return {
-    'all': all
+    'all': all,
+    'stats': stats
   };
 }
 

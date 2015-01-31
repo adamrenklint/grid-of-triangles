@@ -20072,7 +20072,7 @@ var _ = require('lodash');
 function dna () {
 
   var genes = {};
-  var outputs = ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT', 'BACK'];
+  var outputs = ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT'];
 
   function makeGene (input) {
     var options = outputs.slice();
@@ -20099,8 +20099,8 @@ module.exports = dna;
 },{"lodash":2}],6:[function(require,module,exports){
 function draw (map, element, clock, world) {
 
-  element[0].width = element.width();
-  element[0].height = element.height();
+  var width = element[0].width = element.width();
+  var height = element[0].height = element.height();
   var context = element[0].getContext('2d');
   var do_continue = true;
   var cellSize = element.width() / map.width;
@@ -20169,6 +20169,19 @@ function draw (map, element, clock, world) {
     // var timestamp = 'generation 1, tick 123'
     context.fillText(timestamp, 10, 25);
 
+    var stats = world.stats();
+    var generationText = 'gen ' + stats.minGeneration;
+    if (stats.maxGeneration !== stats.minGeneration) {
+      generationText += '-' + stats.maxGeneration;
+    }
+    context.fillText(generationText, 10, 50);
+
+    var foodText = 'food avg ' + stats.averageFoodEaten.toFixed(2) + ' max ' + stats.maxFoodEaten;
+    context.fillText(foodText, 10, height - 40);
+
+    var lifecycleText = 'alive avg ' + stats.averageDaysAlive + ' max ' + stats.maxDaysAlive;
+    context.fillText(lifecycleText, 10, height - 15);
+
     if (do_continue) window.requestAnimationFrame(next);
   }
 
@@ -20193,6 +20206,7 @@ $(function () {
   var _grid = grid(50, 50);
   var _clock = clock(25);
   var _world = world(_grid, _clock, 50);
+  window.grid = _grid;
   
   _clock.start();
   draw(_grid, $grid, _clock, _world);
@@ -20238,6 +20252,10 @@ function grid (width, height) {
     cols[x][y] = target;
   }
 
+  function unset (x, y) {
+   cols[x][y] = null; 
+  }
+
   function setRandom (target) {
     var x = Math.floor(Math.random() * width);
     var y = Math.floor(Math.random() * height);
@@ -20250,6 +20268,7 @@ function grid (width, height) {
   return {
     'set': set,
     'get': get,
+    'unset': unset,
     'width': width,
     'height': height,
     'cols': cols,
@@ -20336,22 +20355,10 @@ function crossover (parents, grid) {
     var target = index < cutoff ? second : first;
     target.dna(gene.input, gene.output);
   });
-  // console.log(alphaGenes, betaGenes)
-  // don't make it so fucking complicated!!!
 
-  // var firstKeys = alphaKeys.slice(0, cutoff).concat(betaKeys.slice(cutoff, betaKeys.length));
-  // var secondKeys = betaKeys.slice(0, cutoff).concat(alphaKeys.slice(cutoff, alphaKeys.length));
+  var parentGeneration = parents[0].generation > parents[1].generation ? parents[0].generation : parents[1].generation;
+  first.generation = second.generation = (parentGeneration + 1);
 
-  // firstKeys.forEach(function (key) {
-  //   console.log(key, alpha[key]);
-  // });
-
-  
-  // console.log(cutoff, Object.keys(parents[0].dna()).length)
-  // _.forEach(, function (value, key) {
-  //   console.log(value, key);
-  // })
-  // console.log(parents)
   return [first, second];
 }
 
@@ -20387,10 +20394,6 @@ function triangle (grid) {
     return directions[index];
   }
 
-  function randomDNA () {
-    // ? how big? or autodiscovering? pros and cons...
-  }
-
   var self = {
     'id': ++_id,
     'generation': 1,
@@ -20405,11 +20408,24 @@ function triangle (grid) {
     'daysAlive': 0
   };
 
+  function relative (direction) {
+    return '*';
+    // if (self.direction === 'UP')
+  }
+
   function sense (x, y) {
     if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return '#';
     var current = grid.get(x, y);
     // TODO: the direction needs to be relative to self/triangle!
-    if (current && current.type) return current.type + (current.direction || '');
+    if (current && current.type) {
+      if (current.direction) {
+        var x = current.type + ':' + relative(current.direction);
+        return x;
+      }
+      else {
+        return current.type;
+      }
+    }
     return current;
   }
 
@@ -20466,19 +20482,19 @@ function triangle (grid) {
     }
     else if (next === 'TURN_LEFT' && direction === 'UP' || next === 'TURN_RIGHT' && direction === 'DOWN') {
       self.direction = 'LEFT';
-      self.health += -1;
+      // self.health += -1;
     }
     else if (next === 'TURN_RIGHT' && direction === 'UP' || next === 'TURN_LEFT' && direction === 'DOWN') {
       self.direction = 'RIGHT';
-      self.health += -1;
+      // self.health += -1;
     }
     else if (next === 'TURN_RIGHT' && direction === 'LEFT' || next === 'TURN_LEFT' && direction === 'RIGHT') {
       self.direction = 'UP';
-      self.health += -1;
+      // self.health += -1;
     }
     else if (next === 'TURN_LEFT' && direction === 'LEFT' || next === 'TURN_RIGHT' && direction === 'RIGHT') {
       self.direction = 'DOWN';
-      self.health += -1;
+      // self.health += -1;
     }
 
     if (next_x < 0) next_x = 0;
@@ -20494,7 +20510,8 @@ function triangle (grid) {
       current.move();
     }
     current = grid.get(next_x, next_y);
-    if (!current) {
+    if (!current || current.id === self.id) {
+      grid.unset(self.x, self.y);
       grid.set(next_x, next_y, self);
     }
     else if (current.type === 'FOOD') {
@@ -20504,10 +20521,13 @@ function triangle (grid) {
     else if (current.type === 'DANGER') {
       current.kill(self);
     }
+    else if (window.debug === self.id) {
+      // console.warn('move not possible', self.id, current.id, current.type);
+      debugger;
+    }
     // if another triangle is in the spot, did they move: if not, make them
     // is next_x or next_y a legal move? if not, stay
 
-    
     self.moving = false;
     self.moved = true;
   }
@@ -20530,6 +20550,7 @@ function world (grid, clock, populationSize) {
   var dangers = [];
   var maxFood = Math.floor(populationSize);
   var maxDangers = Math.floor(populationSize / 3);
+  var minGeneration, maxGeneration, averageFoodEaten, maxFoodEaten, averageDaysAlive, maxDaysAlive;
 
   while (population.length < populationSize) {
     population.push(grid.setRandom(triangle(grid)));
@@ -20546,6 +20567,7 @@ function world (grid, clock, populationSize) {
     if (triangle.type === 'TRIANGLE') {
       var pool = population.slice();
       population = _.without(population, triangle);
+      grid.unset(triangle.x, triangle.y);
       triangle.dead = true;
       // console.log('kill');
       if (population.length < populationSize) spawn(pool, population, grid);
@@ -20557,7 +20579,7 @@ function world (grid, clock, populationSize) {
     to.foodsEaten++;
     foods = _.without(foods, from);
     grid.set(from.x, from.y, to);
-    console.log('eat', to.id, to.foodsEaten, to.health)
+    // console.log('eat', to.id, to.foodsEaten, to.health)
   }
 
   function updateFood () {
@@ -20571,6 +20593,7 @@ function world (grid, clock, populationSize) {
 
   clock.listen(function (now) {
     updateFood();
+    minGeneration = maxGeneration = 0;
     population.forEach(function (triangle) {
       if (!triangle.moved) {
         triangle.moving = true;
@@ -20585,14 +20608,48 @@ function world (grid, clock, populationSize) {
       }
       triangle.moved = false;
     });
+    maxFoodEaten = 0;
+    maxDaysAlive = 0;
+    var totalFoodsEaten = 0;
+    var totalDaysAlive = 0;
+    population.forEach(function (triangle) {
+      if (!minGeneration || triangle.generation < minGeneration) {
+        minGeneration = triangle.generation;
+      }
+      if (!maxGeneration || triangle.generation > maxGeneration) {
+        maxGeneration = triangle.generation;
+      }
+      if (triangle.foodsEaten > maxFoodEaten) {
+        maxFoodEaten = triangle.foodsEaten;
+      }
+      totalFoodsEaten += triangle.foodsEaten;
+      if (triangle.daysAlive > maxDaysAlive) {
+        maxDaysAlive = triangle.daysAlive;
+      }
+      totalDaysAlive += triangle.daysAlive;
+    });
+    averageFoodEaten = totalFoodsEaten / population.length;
+    averageDaysAlive = Math.round(totalDaysAlive / population.length);
   });
 
   function all () {
     return [].concat(population, foods, dangers);
   }
 
+  function stats () {
+    return {
+      'minGeneration': minGeneration,
+      'maxGeneration': maxGeneration,
+      'maxFoodEaten': maxFoodEaten,
+      'averageFoodEaten': averageFoodEaten,
+      'maxDaysAlive': maxDaysAlive,
+      'averageDaysAlive': averageDaysAlive
+    }
+  }
+
   return {
-    'all': all
+    'all': all,
+    'stats': stats
   };
 }
 

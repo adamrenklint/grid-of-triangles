@@ -12,6 +12,7 @@ $(function () {
   var _grid = grid(50, 50);
   var _clock = clock(25);
   var _world = world(_grid, _clock, 50);
+  window.grid = _grid;
   
   _clock.start();
   draw(_grid, $grid, _clock, _world);

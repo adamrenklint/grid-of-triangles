@@ -75,22 +75,10 @@ function crossover (parents, grid) {
     var target = index < cutoff ? second : first;
     target.dna(gene.input, gene.output);
   });
-  // console.log(alphaGenes, betaGenes)
-  // don't make it so fucking complicated!!!
 
-  // var firstKeys = alphaKeys.slice(0, cutoff).concat(betaKeys.slice(cutoff, betaKeys.length));
-  // var secondKeys = betaKeys.slice(0, cutoff).concat(alphaKeys.slice(cutoff, alphaKeys.length));
+  var parentGeneration = parents[0].generation > parents[1].generation ? parents[0].generation : parents[1].generation;
+  first.generation = second.generation = (parentGeneration + 1);
 
-  // firstKeys.forEach(function (key) {
-  //   console.log(key, alpha[key]);
-  // });
-
-  
-  // console.log(cutoff, Object.keys(parents[0].dna()).length)
-  // _.forEach(, function (value, key) {
-  //   console.log(value, key);
-  // })
-  // console.log(parents)
   return [first, second];
 }
 

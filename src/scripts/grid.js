@@ -23,6 +23,10 @@ function grid (width, height) {
     cols[x][y] = target;
   }
 
+  function unset (x, y) {
+   cols[x][y] = null; 
+  }
+
   function setRandom (target) {
     var x = Math.floor(Math.random() * width);
     var y = Math.floor(Math.random() * height);
@@ -35,6 +39,7 @@ function grid (width, height) {
   return {
     'set': set,
     'get': get,
+    'unset': unset,
     'width': width,
     'height': height,
     'cols': cols,

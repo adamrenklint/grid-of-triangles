@@ -11,10 +11,6 @@ function triangle (grid) {
     return directions[index];
   }
 
-  function randomDNA () {
-    // ? how big? or autodiscovering? pros and cons...
-  }
-
   var self = {
     'id': ++_id,
     'generation': 1,
@@ -29,11 +25,24 @@ function triangle (grid) {
     'daysAlive': 0
   };
 
+  function relative (direction) {
+    return '*';
+    // if (self.direction === 'UP')
+  }
+
   function sense (x, y) {
     if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return '#';
     var current = grid.get(x, y);
     // TODO: the direction needs to be relative to self/triangle!
-    if (current && current.type) return current.type + (current.direction || '');
+    if (current && current.type) {
+      if (current.direction) {
+        var x = current.type + ':' + relative(current.direction);
+        return x;
+      }
+      else {
+        return current.type;
+      }
+    }
     return current;
   }
 
@@ -90,19 +99,19 @@ function triangle (grid) {
     }
     else if (next === 'TURN_LEFT' && direction === 'UP' || next === 'TURN_RIGHT' && direction === 'DOWN') {
       self.direction = 'LEFT';
-      self.health += -1;
+      // self.health += -1;
     }
     else if (next === 'TURN_RIGHT' && direction === 'UP' || next === 'TURN_LEFT' && direction === 'DOWN') {
       self.direction = 'RIGHT';
-      self.health += -1;
+      // self.health += -1;
     }
     else if (next === 'TURN_RIGHT' && direction === 'LEFT' || next === 'TURN_LEFT' && direction === 'RIGHT') {
       self.direction = 'UP';
-      self.health += -1;
+      // self.health += -1;
     }
     else if (next === 'TURN_LEFT' && direction === 'LEFT' || next === 'TURN_RIGHT' && direction === 'RIGHT') {
       self.direction = 'DOWN';
-      self.health += -1;
+      // self.health += -1;
     }
 
     if (next_x < 0) next_x = 0;
@@ -118,7 +127,8 @@ function triangle (grid) {
       current.move();
     }
     current = grid.get(next_x, next_y);
-    if (!current) {
+    if (!current || current.id === self.id) {
+      grid.unset(self.x, self.y);
       grid.set(next_x, next_y, self);
     }
     else if (current.type === 'FOOD') {
@@ -128,10 +138,13 @@ function triangle (grid) {
     else if (current.type === 'DANGER') {
       current.kill(self);
     }
+    else if (window.debug === self.id) {
+      // console.warn('move not possible', self.id, current.id, current.type);
+      debugger;
+    }
     // if another triangle is in the spot, did they move: if not, make them
     // is next_x or next_y a legal move? if not, stay
 
-    
     self.moving = false;
     self.moved = true;
   }
