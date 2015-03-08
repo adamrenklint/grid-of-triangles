@@ -31,14 +31,37 @@ function triangle (grid) {
     // if (self.direction === 'UP')
   }
 
-  function sense (x, y) {
+  function sense (watcher, relation, x, y) {
     if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return '#';
     var current = grid.get(x, y);
     // TODO: the direction needs to be relative to self/triangle!
     if (current && current.type) {
       if (current.direction) {
-        var x = current.type + ':' + relative(current.direction);
-        return x;
+
+        var code = watcher.direction + ':' + relation + ':' + current.direction;
+        return code;
+        // var view;
+        
+        // switch (code) {
+        //   case 'DOWN:LEFT:LEFT':
+        //     view = '>';
+        //     break;
+        //   case 'LEFT:LEFT:LEFT':
+        //     view = '<';
+        //     break;
+        //   case 'UP:FRONT:DOWN':
+        //     view = 'v';
+        //     break;
+        //   case 'x':
+        //     view = '^';
+        //     break;
+        // }
+
+        // if (!view && current.x < 10 && current.y < 10) {
+        //   console.log(code, watcher.x, watcher.y, current.x, current.y);
+        //   debugger;
+        // }
+        // return view;
       }
       else {
         return current.type;
@@ -54,24 +77,24 @@ function triangle (grid) {
     var up = self.y - 1;
     var down = self.y + 1;
     if (self.direction === 'UP') {
-      input[0] = sense(left, self.y);
-      input[1] = sense(self.x, up);
-      input[2] = sense(right, self.y);
+      input[0] = sense(self, 'LEFT', left, self.y);
+      input[1] = sense(self, 'FRONT', self.x, up);
+      input[2] = sense(self, 'RIGHT', right, self.y);
     }
     else if (self.direction === 'RIGHT') {
-      input[0] = sense(self.x, up);
-      input[1] = sense(right, self.y);
-      input[2] = sense(self.x, down);
+      input[0] = sense(self, 'LEFT', self.x, up);
+      input[1] = sense(self, 'FRONT', right, self.y);
+      input[2] = sense(self, 'RIGHT', self.x, down);
     }
     else if (self.direction === 'DOWN') {
-      input[0] = sense(right, self.y);
-      input[1] = sense(self.x, down);
-      input[2] = sense(left, self.y);
+      input[0] = sense(self, 'LEFT', right, self.y);
+      input[1] = sense(self, 'FRONT', self.x, down);
+      input[2] = sense(self, 'RIGHT', left, self.y);
     }
     else if (self.direction === 'LEFT') {
-      input[0] = sense(self.x, down);
-      input[1] = sense(left, self.y);
-      input[2] = sense(self.x, up);
+      input[0] = sense(self, 'LEFT', self.x, down);
+      input[1] = sense(self, 'FRONT', left, self.y);
+      input[2] = sense(self, 'RIGHT', self.x, up);
     }
     return input;
   }
@@ -148,6 +171,9 @@ function triangle (grid) {
         // console.warn('move not possible', self.id, current.id, current.type);
         debugger;
       }
+      // else {
+      //   self.health += -5;
+      // }
       // if another triangle is in the spot, did they move: if not, make them
       // is next_x or next_y a legal move? if not, stay
     }

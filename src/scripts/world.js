@@ -10,7 +10,7 @@ function world (grid, clock, populationSize) {
   var foods = [];
   var dangers = [];
   var maxFood = populationSize * 2;
-  var maxDangers = populationSize / 2;
+  var maxDangers = populationSize;
   var minGeneration, maxGeneration, averageFoodEaten, maxFoodEaten, averageDaysAlive, maxDaysAlive;
 
   while (population.length < populationSize) {
@@ -18,6 +18,24 @@ function world (grid, clock, populationSize) {
   }
 
   var _danger;
+  
+  var startCenter = (grid.width / 2) - 2;
+  var endCenter = grid.width - startCenter;
+  var centerX = startCenter;
+  var centerY;
+
+  while (centerX < endCenter) {
+    centerY = startCenter;
+    while (centerY < endCenter) {
+      _danger = danger();
+      _danger.kill = kill;
+      dangers.push(_danger);
+      grid.set(centerX, centerY, _danger);
+      centerY++;
+    }
+    centerX++;
+  }
+  
   while (dangers.length < maxDangers) {
     _danger = grid.setRandom(danger());
     _danger.kill = kill;

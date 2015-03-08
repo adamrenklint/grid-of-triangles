@@ -63,11 +63,10 @@ function draw (map, element, clock, world) {
 
     world.all().forEach(drawObject);
 
-    context.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    context.fillStyle = 'rgba(0, 0, 0, 0.5)';
     context.font = '20px arial';
     var now = clock.now();
     var timestamp = 'year ' + now.year + ' day ' + now.day;
-    // var timestamp = 'generation 1, tick 123'
     context.fillText(timestamp, 10, 25);
 
     var stats = world.stats();

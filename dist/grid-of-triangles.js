@@ -9209,7 +9209,7 @@ return jQuery;
 (function (global){
 /**
  * @license
- * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+ * lodash 3.1.0 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern -d -o ./index.js`
  * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
  * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
@@ -9222,7 +9222,7 @@ return jQuery;
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '3.0.0';
+  var VERSION = '3.1.0';
 
   /** Used to compose bitmasks for wrapper metadata. */
   var BIND_FLAG = 1,
@@ -9978,7 +9978,7 @@ return jQuery;
 
     /**
      * Used as the maximum length of an array-like value.
-     * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+     * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
      * for more details.
      */
     var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
@@ -10036,14 +10036,14 @@ return jQuery;
      * `findLast`, `findLastIndex`, `findLastKey`, `findWhere`, `first`, `has`,
      * `identity`, `includes`, `indexOf`, `isArguments`, `isArray`, `isBoolean`,
      * `isDate`, `isElement`, `isEmpty`, `isEqual`, `isError`, `isFinite`,
-     * `isFunction`, `isMatch` , `isNative`, `isNaN`, `isNull`, `isNumber`,
+     * `isFunction`, `isMatch`, `isNative`, `isNaN`, `isNull`, `isNumber`,
      * `isObject`, `isPlainObject`, `isRegExp`, `isString`, `isUndefined`,
      * `isTypedArray`, `join`, `kebabCase`, `last`, `lastIndexOf`, `max`, `min`,
      * `noConflict`, `now`, `pad`, `padLeft`, `padRight`, `parseInt`, `pop`,
      * `random`, `reduce`, `reduceRight`, `repeat`, `result`, `runInContext`,
      * `shift`, `size`, `snakeCase`, `some`, `sortedIndex`, `sortedLastIndex`,
-     * `startsWith`, `template`, `trim`, `trimLeft`, `trimRight`, `trunc`,
-     * `unescape`, `uniqueId`, `value`, and `words`
+     * `startCase`, `startsWith`, `template`, `trim`, `trimLeft`, `trimRight`,
+     * `trunc`, `unescape`, `uniqueId`, `value`, and `words`
      *
      * The wrapper function `sample` will return a wrapped value when `n` is provided,
      * otherwise an unwrapped value is returned.
@@ -10269,11 +10269,14 @@ return jQuery;
      * @returns {Object} Returns the new reversed `LazyWrapper` object.
      */
     function lazyReverse() {
-      var filtered = this.filtered,
-          result = filtered ? new LazyWrapper(this) : this.clone();
-
-      result.dir = this.dir * -1;
-      result.filtered = filtered;
+      if (this.filtered) {
+        var result = new LazyWrapper(this);
+        result.dir = -1;
+        result.filtered = true;
+      } else {
+        result = this.clone();
+        result.dir *= -1;
+      }
       return result;
     }
 
@@ -10292,12 +10295,12 @@ return jQuery;
       }
       var dir = this.dir,
           isRight = dir < 0,
-          length = array.length,
-          view = getView(0, length, this.views),
+          view = getView(0, array.length, this.views),
           start = view.start,
           end = view.end,
+          length = end - start,
           dropCount = this.dropCount,
-          takeCount = nativeMin(end - start, this.takeCount - dropCount),
+          takeCount = nativeMin(length, this.takeCount - dropCount),
           index = isRight ? end : start - 1,
           iteratees = this.iteratees,
           iterLength = iteratees ? iteratees.length : 0,
@@ -10333,7 +10336,7 @@ return jQuery;
           result[resIndex++] = value;
         }
       }
-      return isRight ? result.reverse() : result;
+      return result;
     }
 
     /*------------------------------------------------------------------------*/
@@ -10853,8 +10856,8 @@ return jQuery;
       }
       // Handle "_.property" and "_.matches" style callback shorthands.
       return type == 'object'
-        ? baseMatches(func, !argCount)
-        : baseProperty(argCount ? baseToString(func) : func);
+        ? baseMatches(func)
+        : baseProperty(func + '');
     }
 
     /**
@@ -11474,10 +11477,9 @@ return jQuery;
      *
      * @private
      * @param {Object} source The object of property values to match.
-     * @param {boolean} [isCloned] Specify cloning the source object.
      * @returns {Function} Returns the new function.
      */
-    function baseMatches(source, isCloned) {
+    function baseMatches(source) {
       var props = keys(source),
           length = props.length;
 
@@ -11490,9 +11492,6 @@ return jQuery;
             return object != null && value === object[key] && hasOwnProperty.call(object, key);
           };
         }
-      }
-      if (isCloned) {
-        source = baseClone(source, true);
       }
       var values = Array(length),
           strictCompareFlags = Array(length);
@@ -11583,6 +11582,9 @@ return jQuery;
           result = isArguments(value)
             ? toPlainObject(value)
             : (isPlainObject(value) ? value : {});
+        }
+        else {
+          isCommon = false;
         }
       }
       // Add the source value to the stack of traversed objects and associate
@@ -11705,7 +11707,8 @@ return jQuery;
       if (end < 0) {
         end += length;
       }
-      length = start > end ? 0 : (end - start);
+      length = start > end ? 0 : (end - start) >>> 0;
+      start >>>= 0;
 
       var result = Array(length);
       while (++index < length) {
@@ -12312,7 +12315,7 @@ return jQuery;
         return '';
       }
       var padLength = length - strLength;
-      chars = chars == null ? ' ' : baseToString(chars);
+      chars = chars == null ? ' ' : (chars + '');
       return repeat(chars, ceil(padLength / chars.length)).slice(0, padLength);
     }
 
@@ -12505,7 +12508,7 @@ return jQuery;
         case stringTag:
           // Coerce regexes to strings and treat strings primitives and string
           // objects as equal. See https://es5.github.io/#x15.10.6.4 for more details.
-          return object == baseToString(other);
+          return object == (other + '');
       }
       return false;
     }
@@ -12800,13 +12803,17 @@ return jQuery;
         var length = object.length,
             prereq = isLength(length) && isIndex(index, length);
       } else {
-        prereq = type == 'string' && index in value;
+        prereq = type == 'string' && index in object;
       }
       return prereq && object[index] === value;
     }
 
     /**
      * Checks if `value` is a valid array-like length.
+     *
+     * **Note:** This function is based on ES `ToLength`. See the
+     * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+     * for more details.
      *
      * @private
      * @param {*} value The value to check.
@@ -14523,6 +14530,9 @@ return jQuery;
     function wrapperReverse() {
       var value = this.__wrapped__;
       if (value instanceof LazyWrapper) {
+        if (this.__actions__.length) {
+          value = new LazyWrapper(this);
+        }
         return new LodashWrapper(value.reverse());
       }
       return this.thru(function(value) {
@@ -14875,7 +14885,7 @@ return jQuery;
      * // => 'fred'
      */
     function findWhere(collection, source) {
-      return find(collection, matches(source));
+      return find(collection, baseMatches(source));
     }
 
     /**
@@ -14898,7 +14908,7 @@ return jQuery;
      * @returns {Array|Object|string} Returns `collection`.
      * @example
      *
-     * _([1, 2, 3]).forEach(function(n) { console.log(n); });
+     * _([1, 2, 3]).forEach(function(n) { console.log(n); }).value();
      * // => logs each value from left to right and returns the array
      *
      * _.forEach({ 'one': 1, 'two': 2, 'three': 3 }, function(n, key) { console.log(n, key); });
@@ -15252,7 +15262,7 @@ return jQuery;
      * // => [36, 40] (iteration order is not guaranteed)
      */
     function pluck(collection, key) {
-      return map(collection, property(key));
+      return map(collection, baseProperty(key + ''));
     }
 
     /**
@@ -15623,7 +15633,7 @@ return jQuery;
      * // => ['barney', 'fred']
      */
     function where(collection, source) {
-      return filter(collection, matches(source));
+      return filter(collection, baseMatches(source));
     }
 
     /*------------------------------------------------------------------------*/
@@ -16314,7 +16324,7 @@ return jQuery;
      * // => 'FRED'
      *
      * // modifying the result cache
-     * upperCase.cache.set('fred, 'BARNEY');
+     * upperCase.cache.set('fred', 'BARNEY');
      * upperCase('fred');
      * // => 'BARNEY'
      *
@@ -18268,7 +18278,7 @@ return jQuery;
      */
     var camelCase = createCompounder(function(result, word, index) {
       word = word.toLowerCase();
-      return index ? (result + word.charAt(0).toUpperCase() + word.slice(1)) : word;
+      return result + (index ? (word.charAt(0).toUpperCase() + word.slice(1)) : word);
     });
 
     /**
@@ -18402,7 +18412,7 @@ return jQuery;
 
     /**
      * Converts `string` to kebab case (a.k.a. spinal case).
-     * See [Wikipedia](https://en.wikipedia.org/wiki/Letter_case#Computers) for
+     * See [Wikipedia](https://en.wikipedia.org/wiki/Letter_case#Special_case_styles) for
      * more details.
      *
      * @static
@@ -18619,14 +18629,39 @@ return jQuery;
      * _.snakeCase('Foo Bar');
      * // => 'foo_bar'
      *
-     * _.snakeCase('--foo-bar');
+     * _.snakeCase('fooBar');
      * // => 'foo_bar'
      *
-     * _.snakeCase('fooBar');
+     * _.snakeCase('--foo-bar');
      * // => 'foo_bar'
      */
     var snakeCase = createCompounder(function(result, word, index) {
       return result + (index ? '_' : '') + word.toLowerCase();
+    });
+
+    /**
+     * Converts `string` to start case.
+     * See [Wikipedia](https://en.wikipedia.org/wiki/Letter_case#Stylistic_or_specialised_usage)
+     * for more details.
+     *
+     * @static
+     * @memberOf _
+     * @category String
+     * @param {string} [string=''] The string to convert.
+     * @returns {string} Returns the start cased string.
+     * @example
+     *
+     * _.startCase('--foo-bar');
+     * // => 'Foo Bar'
+     *
+     * _.startCase('fooBar');
+     * // => 'Foo Bar'
+     *
+     * _.startCase('__foo_bar__');
+     * // => 'Foo Bar'
+     */
+    var startCase = createCompounder(function(result, word, index) {
+      return result + (index ? ' ' : '') + (word.charAt(0).toUpperCase() + word.slice(1));
     });
 
     /**
@@ -18888,7 +18923,7 @@ return jQuery;
       if (guard ? isIterateeCall(value, chars, guard) : chars == null) {
         return string.slice(trimmedLeftIndex(string), trimmedRightIndex(string) + 1);
       }
-      chars = baseToString(chars);
+      chars = (chars + '');
       return string.slice(charsLeftIndex(string, chars), charsRightIndex(string, chars) + 1);
     }
 
@@ -18919,7 +18954,7 @@ return jQuery;
       if (guard ? isIterateeCall(value, chars, guard) : chars == null) {
         return string.slice(trimmedLeftIndex(string))
       }
-      return string.slice(charsLeftIndex(string, baseToString(chars)));
+      return string.slice(charsLeftIndex(string, (chars + '')));
     }
 
     /**
@@ -18949,7 +18984,7 @@ return jQuery;
       if (guard ? isIterateeCall(value, chars, guard) : chars == null) {
         return string.slice(0, trimmedRightIndex(string) + 1)
       }
-      return string.slice(0, charsRightIndex(string, baseToString(chars)) + 1);
+      return string.slice(0, charsRightIndex(string, (chars + '')) + 1);
     }
 
     /**
@@ -19156,7 +19191,9 @@ return jQuery;
       if (guard && isIterateeCall(func, thisArg, guard)) {
         thisArg = null;
       }
-      return baseCallback(func, thisArg);
+      return isObjectLike(func)
+        ? matches(func)
+        : baseCallback(func, thisArg);
     }
 
     /**
@@ -19224,7 +19261,7 @@ return jQuery;
      * // => { 'user': 'barney', 'age': 36 }
      */
     function matches(source) {
-      return baseMatches(source, true);
+      return baseMatches(baseClone(source, true));
     }
 
     /**
@@ -19721,6 +19758,7 @@ return jQuery;
     lodash.some = some;
     lodash.sortedIndex = sortedIndex;
     lodash.sortedLastIndex = sortedLastIndex;
+    lodash.startCase = startCase;
     lodash.startsWith = startsWith;
     lodash.template = template;
     lodash.trim = trim;
@@ -19846,10 +19884,10 @@ return jQuery;
     // Add `LazyWrapper` methods for `_.pluck` and `_.where`.
     arrayEach(['pluck', 'where'], function(methodName, index) {
       var operationName = index ? 'filter' : 'map',
-          createCallback = index ? matches : property;
+          createCallback = index ? baseMatches : baseProperty;
 
       LazyWrapper.prototype[methodName] = function(value) {
-        return this[operationName](createCallback(value));
+        return this[operationName](createCallback(index ? value : (value + '')));
       };
     });
 
@@ -19886,7 +19924,8 @@ return jQuery;
 
     // Add `LazyWrapper` methods to `lodash.prototype`.
     baseForOwn(LazyWrapper.prototype, function(func, methodName) {
-      var retUnwrapped = /^(?:first|last)$/.test(methodName);
+      var lodashFunc = lodash[methodName],
+          retUnwrapped = /^(?:first|last)$/.test(methodName);
 
       lodash.prototype[methodName] = function() {
         var value = this.__wrapped__,
@@ -19899,12 +19938,12 @@ return jQuery;
         if (retUnwrapped && !chainAll) {
           return onlyLazy
             ? func.call(value)
-            : lodash[methodName](this.value());
+            : lodashFunc.call(lodash, this.value());
         }
         var interceptor = function(value) {
           var otherArgs = [value];
           push.apply(otherArgs, args);
-          return lodash[methodName].apply(lodash, otherArgs);
+          return lodashFunc.apply(lodash, otherArgs);
         };
         if (isLazy || isArray(value)) {
           var wrapper = onlyLazy ? value : new LazyWrapper(this),
@@ -20162,11 +20201,10 @@ function draw (map, element, clock, world) {
 
     world.all().forEach(drawObject);
 
-    context.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    context.fillStyle = 'rgba(0, 0, 0, 0.5)';
     context.font = '20px arial';
     var now = clock.now();
     var timestamp = 'year ' + now.year + ' day ' + now.day;
-    // var timestamp = 'generation 1, tick 123'
     context.fillText(timestamp, 10, 25);
 
     var stats = world.stats();
@@ -20421,14 +20459,37 @@ function triangle (grid) {
     // if (self.direction === 'UP')
   }
 
-  function sense (x, y) {
+  function sense (watcher, relation, x, y) {
     if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return '#';
     var current = grid.get(x, y);
     // TODO: the direction needs to be relative to self/triangle!
     if (current && current.type) {
       if (current.direction) {
-        var x = current.type + ':' + relative(current.direction);
-        return x;
+
+        var code = watcher.direction + ':' + relation + ':' + current.direction;
+        return code;
+        // var view;
+        
+        // switch (code) {
+        //   case 'DOWN:LEFT:LEFT':
+        //     view = '>';
+        //     break;
+        //   case 'LEFT:LEFT:LEFT':
+        //     view = '<';
+        //     break;
+        //   case 'UP:FRONT:DOWN':
+        //     view = 'v';
+        //     break;
+        //   case 'x':
+        //     view = '^';
+        //     break;
+        // }
+
+        // if (!view && current.x < 10 && current.y < 10) {
+        //   console.log(code, watcher.x, watcher.y, current.x, current.y);
+        //   debugger;
+        // }
+        // return view;
       }
       else {
         return current.type;
@@ -20444,24 +20505,24 @@ function triangle (grid) {
     var up = self.y - 1;
     var down = self.y + 1;
     if (self.direction === 'UP') {
-      input[0] = sense(left, self.y);
-      input[1] = sense(self.x, up);
-      input[2] = sense(right, self.y);
+      input[0] = sense(self, 'LEFT', left, self.y);
+      input[1] = sense(self, 'FRONT', self.x, up);
+      input[2] = sense(self, 'RIGHT', right, self.y);
     }
     else if (self.direction === 'RIGHT') {
-      input[0] = sense(self.x, up);
-      input[1] = sense(right, self.y);
-      input[2] = sense(self.x, down);
+      input[0] = sense(self, 'LEFT', self.x, up);
+      input[1] = sense(self, 'FRONT', right, self.y);
+      input[2] = sense(self, 'RIGHT', self.x, down);
     }
     else if (self.direction === 'DOWN') {
-      input[0] = sense(right, self.y);
-      input[1] = sense(self.x, down);
-      input[2] = sense(left, self.y);
+      input[0] = sense(self, 'LEFT', right, self.y);
+      input[1] = sense(self, 'FRONT', self.x, down);
+      input[2] = sense(self, 'RIGHT', left, self.y);
     }
     else if (self.direction === 'LEFT') {
-      input[0] = sense(self.x, down);
-      input[1] = sense(left, self.y);
-      input[2] = sense(self.x, up);
+      input[0] = sense(self, 'LEFT', self.x, down);
+      input[1] = sense(self, 'FRONT', left, self.y);
+      input[2] = sense(self, 'RIGHT', self.x, up);
     }
     return input;
   }
@@ -20538,6 +20599,9 @@ function triangle (grid) {
         // console.warn('move not possible', self.id, current.id, current.type);
         debugger;
       }
+      // else {
+      //   self.health += -5;
+      // }
       // if another triangle is in the spot, did they move: if not, make them
       // is next_x or next_y a legal move? if not, stay
     }
@@ -20563,7 +20627,7 @@ function world (grid, clock, populationSize) {
   var foods = [];
   var dangers = [];
   var maxFood = populationSize * 2;
-  var maxDangers = populationSize / 2;
+  var maxDangers = populationSize;
   var minGeneration, maxGeneration, averageFoodEaten, maxFoodEaten, averageDaysAlive, maxDaysAlive;
 
   while (population.length < populationSize) {
@@ -20571,6 +20635,24 @@ function world (grid, clock, populationSize) {
   }
 
   var _danger;
+  
+  var startCenter = (grid.width / 2) - 2;
+  var endCenter = grid.width - startCenter;
+  var centerX = startCenter;
+  var centerY;
+
+  while (centerX < endCenter) {
+    centerY = startCenter;
+    while (centerY < endCenter) {
+      _danger = danger();
+      _danger.kill = kill;
+      dangers.push(_danger);
+      grid.set(centerX, centerY, _danger);
+      centerY++;
+    }
+    centerX++;
+  }
+  
   while (dangers.length < maxDangers) {
     _danger = grid.setRandom(danger());
     _danger.kill = kill;
